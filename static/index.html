@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STEP AI Lifestyle Generator</title>
+<style>
+body { font-family: Inter, Arial; background:#fafafa; margin:40px; }
+.container { background:#fff; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.1); padding:25px; max-width:880px; margin:auto; }
+input, select, textarea { width:100%; padding:10px; margin-top:8px; border:1px solid #ccc; border-radius:6px; }
+button { padding:10px 20px; border:none; border-radius:6px; color:white; cursor:pointer; margin-top:12px;}
+.analyze{background:#444;} .generate{background:#0078D7;}
+img { max-width:100%; border-radius:8px; box-shadow:0 0 5px rgba(0,0,0,0.1); margin-top:15px;}
+#compare { display:flex; justify-content:space-between; gap:15px; margin-top:25px; flex-wrap:wrap; }
+.col { flex:1; text-align:center; min-width:250px; }
+pre { background:#f0f0f0; padding:10px; border-radius:6px; max-height:200px; overflow:auto; }
+h3 { margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>👜 STEP AI Lifestyle Generator</h2>
+  <p>Analyze → Generate photorealistic lifestyle imagery</p>
+
+  <label>Product Image URL</label>
+  <input id="fileUrl" type="text" placeholder="Enter product image URL">
+
+  <button class="analyze" onclick="analyzeImage()">🔍 Analyze Image</button>
+
+  <pre id="analyzeResult"></pre>
+
+  <label>Prompt</label>
+  <textarea id="prompt" rows="3" placeholder="Generated or custom prompt here..."></textarea>
+
+  <label>AI Model</label>
+  <select id="ai_model">
+    <option value="OPENAI">OpenAI DALL·E 3</option>
+    <option value="GEMINI">Google Imagen 4</option>
+  </select>
+
+  <button class="generate" onclick="generate()">✨ Generate Lifestyle Image</button>
+
+  <div id="compare">
+    <div class="col">
+      <h3>Original</h3>
+      <img id="original" src="" alt="">
+    </div>
+    <div class="col">
+      <h3>Generated</h3>
+      <img id="ai_image" src="" alt="">
+    </div>
+  </div>
+
+  <pre id="log"></pre>
+</div>
+
+<script>
+const backend = window.location.origin;
+
+async function analyzeImage(){
+  const fileUrl=document.getElementById("fileUrl").value.trim();
+  if(!fileUrl){alert("Enter product image URL first.");return;}
+  document.getElementById("analyzeResult").textContent="Analyzing...";
+  try{
+    const r=await fetch(`${backend}/analyze-image`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({image_url:fileUrl})
+    });
+    const data=await r.json();
+    if(data.success){
+      document.getElementById("analyzeResult").textContent=JSON.stringify(data.result,null,2);
+      document.getElementById("prompt").value=data.result.generated_editing_prompt || "";
+      document.getElementById("original").src=fileUrl;
+    }else{
+      document.getElementById("analyzeResult").textContent="❌ "+data.error;
+    }
+  }catch(e){
+    document.getElementById("analyzeResult").textContent="❌ "+e;
+  }
+}
+
+async function generate(){
+  const fileUrl=document.getElementById("fileUrl").value.trim();
+  const prompt=document.getElementById("prompt").value.trim();
+  const ai_model=document.getElementById("ai_model").value;
+  if(!fileUrl||!prompt){alert("Enter image URL and prompt first.");return;}
+
+  document.getElementById("log").textContent="⚙️ Generating...";
+  try{
+    const r=await fetch(`${backend}/ai-image`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({fileUrl,prompt,ai_model})
+    });
+    const data=await r.json();
+    if(data.success){
+      if(data.image_url)
+        document.getElementById("ai_image").src=data.image_url;
+      else if(data.image_base64)
+        document.getElementById("ai_image").src=`data:image/png;base64,${data.image_base64}`;
+      document.getElementById("log").textContent="✅ Done!";
+    }else{
+      document.getElementById("log").textContent="❌ "+data.error;
+    }
+  }catch(e){
+    document.getElementById("log").textContent="❌ "+e;
+  }
+}
+</script>
+</body>
+</html>
