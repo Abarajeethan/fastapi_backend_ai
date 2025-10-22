@@ -165,8 +165,8 @@ def ai_image(req: AIImageRequest):
             * Do not deviate from the described scene, aesthetic, or lighting.
             ---
             **Editing Instructions:**
-            {req.prompt}. 
-            """
+            
+            """ + req.prompt
 
             files = {
                 "model": (None, "gpt-image-1"),
